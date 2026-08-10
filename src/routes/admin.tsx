@@ -61,7 +61,7 @@ function AdminPage() {
     }
     const item: ContentItem = {
       id: `ci_new_${items.length + 1}`,
-      source_id: SOURCES[0].id,
+      source_id: SOURCES[0]!.id,
       title: url.replace(/^https?:\/\//, "").slice(0, 60),
       url,
       published_at: null,

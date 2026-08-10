@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AskRouteImport } from './routes/ask'
 import { Route as FinderRouteImport } from './routes/finder'
 import { Route as SavedRouteImport } from './routes/saved'
@@ -25,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AskRoute = AskRouteImport.update({
@@ -56,6 +62,7 @@ const TopicsRoute = TopicsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/ask': typeof AskRoute
   '/finder': typeof FinderRoute
   '/saved': typeof SavedRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/ask': typeof AskRoute
   '/finder': typeof FinderRoute
   '/saved': typeof SavedRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/ask': typeof AskRoute
   '/finder': typeof FinderRoute
   '/saved': typeof SavedRoute
@@ -84,13 +93,29 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/about' | '/ask' | '/finder' | '/saved' | '/sources' | '/topics'
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/ask'
+    | '/finder'
+    | '/saved'
+    | '/sources'
+    | '/topics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/ask' | '/finder' | '/saved' | '/sources' | '/topics'
+  to:
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/ask'
+    | '/finder'
+    | '/saved'
+    | '/sources'
+    | '/topics'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/admin'
     | '/ask'
     | '/finder'
     | '/saved'
@@ -101,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminRoute: typeof AdminRoute
   AskRoute: typeof AskRoute
   FinderRoute: typeof FinderRoute
   SavedRoute: typeof SavedRoute
@@ -122,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ask': {
@@ -165,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminRoute: AdminRoute,
   AskRoute: AskRoute,
   FinderRoute: FinderRoute,
   SavedRoute: SavedRoute,
