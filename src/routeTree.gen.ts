@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AskRouteImport } from './routes/ask'
+import { Route as FinderRouteImport } from './routes/finder'
+import { Route as SourcesRouteImport } from './routes/sources'
 import { Route as TopicsRouteImport } from './routes/topics'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +25,16 @@ const AskRoute = AskRouteImport.update({
   path: '/ask',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FinderRoute = FinderRouteImport.update({
+  id: '/finder',
+  path: '/finder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourcesRoute = SourcesRouteImport.update({
+  id: '/sources',
+  path: '/sources',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TopicsRoute = TopicsRouteImport.update({
   id: '/topics',
   path: '/topics',
@@ -32,30 +44,38 @@ const TopicsRoute = TopicsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ask': typeof AskRoute
+  '/finder': typeof FinderRoute
+  '/sources': typeof SourcesRoute
   '/topics': typeof TopicsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ask': typeof AskRoute
+  '/finder': typeof FinderRoute
+  '/sources': typeof SourcesRoute
   '/topics': typeof TopicsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ask': typeof AskRoute
+  '/finder': typeof FinderRoute
+  '/sources': typeof SourcesRoute
   '/topics': typeof TopicsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ask' | '/topics'
+  fullPaths: '/' | '/ask' | '/finder' | '/sources' | '/topics'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ask' | '/topics'
-  id: '__root__' | '/' | '/ask' | '/topics'
+  to: '/' | '/ask' | '/finder' | '/sources' | '/topics'
+  id: '__root__' | '/' | '/ask' | '/finder' | '/sources' | '/topics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AskRoute: typeof AskRoute
+  FinderRoute: typeof FinderRoute
+  SourcesRoute: typeof SourcesRoute
   TopicsRoute: typeof TopicsRoute
 }
 
@@ -75,6 +95,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AskRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/finder': {
+      id: '/finder'
+      path: '/finder'
+      fullPath: '/finder'
+      preLoaderRoute: typeof FinderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sources': {
+      id: '/sources'
+      path: '/sources'
+      fullPath: '/sources'
+      preLoaderRoute: typeof SourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/topics': {
       id: '/topics'
       path: '/topics'
@@ -88,6 +122,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AskRoute: AskRoute,
+  FinderRoute: FinderRoute,
+  SourcesRoute: SourcesRoute,
   TopicsRoute: TopicsRoute,
 }
 export const routeTree = rootRouteImport
