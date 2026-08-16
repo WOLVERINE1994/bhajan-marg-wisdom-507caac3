@@ -4,7 +4,9 @@ import { ArrowRight, BookOpen, Compass, ShieldCheck } from "lucide-react";
 import { AuthorityBadge } from "@/components/badges";
 import { SiteShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
-import { CORPUS_STATS, EXAMPLE_PROMPTS, SOURCES, TOPICS } from "@/data/registry";
+import { EXAMPLE_PROMPTS } from "@/data/registry";
+import { LibraryErrorState, LibraryNotFoundState } from "@/components/library-states";
+import { wisdomLibraryQuery } from "@/lib/library-query";
 
 export const Route = createFileRoute("/")({
   head: () => ({
