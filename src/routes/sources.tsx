@@ -48,8 +48,9 @@ function SourcesPage() {
   const [filter, setFilter] = useState<Platform | "all">("all");
   const [officialOnly, setOfficialOnly] = useState(true);
   const { items: recent, clear } = useRecentSources();
+  const { data: library } = useSuspenseQuery(wisdomLibraryQuery);
 
-  const sources = SOURCES.filter(
+  const sources = library.sources.filter(
     (s) =>
       (filter === "all" || s.platform === filter) &&
       (!officialOnly || s.authority === "OFFICIAL"),
