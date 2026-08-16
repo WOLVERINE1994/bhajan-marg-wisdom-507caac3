@@ -1,9 +1,11 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { LibraryErrorState, LibraryNotFoundState } from "@/components/library-states";
 import { SiteShell } from "@/components/site-shell";
 import { Input } from "@/components/ui/input";
-import { TOPICS } from "@/data/registry";
+import { wisdomLibraryQuery } from "@/lib/library-query";
 
 export const Route = createFileRoute("/topics")({
   head: () => ({
