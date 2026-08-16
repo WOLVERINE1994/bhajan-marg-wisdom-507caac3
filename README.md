@@ -42,6 +42,20 @@ plus `qa_pairs`, `citations`, `ingestion_jobs`, `answer_audits`. See `src/data/t
 each interface maps 1:1 to a table. `transcript_segments.embedding` becomes
 `vector(3072)` with pgvector + an HNSW index over a `halfvec` cast.
 
+### Supabase foundation
+
+Apply `supabase/migrations/20260816000000_wisdom_library_foundation.sql` with the
+Supabase CLI or SQL editor. It creates all nine tables, indexes, least-privilege
+grants, row-level security policies, verified source/content metadata, and the
+reviewed topic taxonomy. It deliberately seeds no transcript or teaching text.
+
+Copy `.env.example` to the deployment environment and configure `SUPABASE_URL`
+plus `SUPABASE_ANON_KEY`. `SUPABASE_SERVICE_ROLE_KEY` is optional and must remain
+server-only; it is needed only for private ingestion-job data. The server loader
+is `loadWisdomLibrary()` in `src/data/library.server.ts`. It uses the reviewed
+registry automatically when configuration is missing, Supabase times out, or the
+initial migration/seed is incomplete.
+
 ### Pipeline stages
 1. **Source registration** — URL, platform, OFFICIAL vs THIRD-PARTY DISCOVERY flag,
    reliability tier, copyright/usage notes, and explicit permission state. Nothing is

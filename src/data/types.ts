@@ -52,6 +52,9 @@ export interface Source {
   authority: SourceAuthority;
   /** Verified as belonging to / authorized by the organisation. */
   verified: boolean;
+  /** Date and authoritative page used for the most recent metadata verification. */
+  verified_at?: string | null;
+  verification_url?: string | null;
   reliability: ReliabilityTier;
   description: string;
   /** Copyright / usage constraints recorded before any ingestion. */
