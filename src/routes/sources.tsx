@@ -28,6 +28,9 @@ export const Route = createFileRoute("/sources")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(wisdomLibraryQuery),
+  errorComponent: LibraryErrorState,
+  notFoundComponent: LibraryNotFoundState,
   component: SourcesPage,
 });
 
