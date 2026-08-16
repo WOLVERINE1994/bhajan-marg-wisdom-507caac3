@@ -1,11 +1,13 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 import { AuthorityBadge, StatusPill } from "@/components/badges";
+import { LibraryErrorState, LibraryNotFoundState } from "@/components/library-states";
 import { SiteShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
-import { CONTENT_ITEMS, SOURCES } from "@/data/registry";
+import { wisdomLibraryQuery } from "@/lib/library-query";
 import type { Platform } from "@/data/types";
 import { trackSourceView, useRecentSources } from "@/lib/local-store";
 
