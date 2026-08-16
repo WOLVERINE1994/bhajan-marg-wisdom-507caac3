@@ -1,6 +1,13 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, FileAudio, Plus, ScissorsLineDashed, ShieldQuestion, Upload } from "lucide-react";
+import {
+  CheckCircle2,
+  FileAudio,
+  Plus,
+  ScissorsLineDashed,
+  ShieldQuestion,
+  Upload,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -103,9 +110,7 @@ function AdminPage() {
   return (
     <SiteShell>
       <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
-        <h1 className="font-display text-3xl font-semibold text-foreground">
-          Ingestion dashboard
-        </h1>
+        <h1 className="font-display text-3xl font-semibold text-foreground">Ingestion dashboard</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Mock console for the architected pipeline. Actions here change local state only — they do
           not fetch, transcribe or publish anything, and no item is ever shown as indexed unless it

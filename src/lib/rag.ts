@@ -54,8 +54,40 @@ export function detectLanguage(question: string): LanguageCode {
 }
 
 const STOP = new Set([
-  "the","a","an","is","are","do","does","how","what","why","i","my","me","to","of","and","in","on",
-  "kya","kaise","kyon","mujhe","mera","meri","hai","ho","ka","ki","ke","se","par","main","aur","nahi",
+  "the",
+  "a",
+  "an",
+  "is",
+  "are",
+  "do",
+  "does",
+  "how",
+  "what",
+  "why",
+  "i",
+  "my",
+  "me",
+  "to",
+  "of",
+  "and",
+  "in",
+  "on",
+  "kya",
+  "kaise",
+  "kyon",
+  "mujhe",
+  "mera",
+  "meri",
+  "hai",
+  "ho",
+  "ka",
+  "ki",
+  "ke",
+  "se",
+  "par",
+  "main",
+  "aur",
+  "nahi",
 ]);
 
 function tokenize(text: string): string[] {
@@ -104,21 +136,21 @@ function toCitations(hits: RetrievalHit[], library?: WisdomLibrary): RetrievedCi
       library?.contentItems.find((c) => c.id === hit.segment.content_item_id) ?? DEMO_ITEM;
     const source = library?.sources.find((s) => s.id === item.source_id) ?? DEMO_SOURCE;
     return {
-    citation: {
-      id: `cit_${hit.segment.id}_${i}`,
-      segment_id: hit.segment.id,
-      content_item_id: hit.segment.content_item_id,
-      source_id: source.id,
-      // Never fabricate: the quote is exactly the stored segment text.
-      quote: hit.segment.text,
-      start_seconds: hit.segment.start_seconds,
-      end_seconds: hit.segment.end_seconds,
-      score: hit.score,
-      validated: true,
-    },
-    segment: hit.segment,
-    item,
-    source,
+      citation: {
+        id: `cit_${hit.segment.id}_${i}`,
+        segment_id: hit.segment.id,
+        content_item_id: hit.segment.content_item_id,
+        source_id: source.id,
+        // Never fabricate: the quote is exactly the stored segment text.
+        quote: hit.segment.text,
+        start_seconds: hit.segment.start_seconds,
+        end_seconds: hit.segment.end_seconds,
+        score: hit.score,
+        validated: true,
+      },
+      segment: hit.segment,
+      item,
+      source,
     };
   });
 }
@@ -240,21 +272,23 @@ export function findOriginalMoments(question: string, library?: WisdomLibrary): 
   const tokens = tokenize(question);
   const topics = library?.topics.length ? library.topics : TOPICS;
   const sources = library?.sources.length ? library.sources : SOURCES;
-  const topicMatches = topics.filter((t) =>
-    tokens.some(
-      (tok) =>
-        t.label_en.toLowerCase().includes(tok) ||
-        t.blurb.toLowerCase().includes(tok) ||
-        t.slug.includes(tok) ||
-        t.example_questions.join(" ").toLowerCase().includes(tok),
-    ),
-  ).map((t) => t.label_en);
+  const topicMatches = topics
+    .filter((t) =>
+      tokens.some(
+        (tok) =>
+          t.label_en.toLowerCase().includes(tok) ||
+          t.blurb.toLowerCase().includes(tok) ||
+          t.slug.includes(tok) ||
+          t.example_questions.join(" ").toLowerCase().includes(tok),
+      ),
+    )
+    .map((t) => t.label_en);
 
   const demoHits = retrieveSegments(question, true, library);
   const segmentTopics = library?.segmentTopics.length ? library.segmentTopics : DEMO_SEGMENT_TOPICS;
-  const demoTopics = segmentTopics.filter((st) =>
-    demoHits.some((h) => h.segment.id === st.segment_id),
-  ).map((st) => st.topic_id);
+  const demoTopics = segmentTopics
+    .filter((st) => demoHits.some((h) => h.segment.id === st.segment_id))
+    .map((st) => st.topic_id);
 
   const suggestedTopics = Array.from(
     new Set([
@@ -263,18 +297,20 @@ export function findOriginalMoments(question: string, library?: WisdomLibrary): 
     ]),
   ).slice(0, 4);
 
-  return sources.filter((s) => s.platform !== "mobile_app" && s.authority === "OFFICIAL").map((s) => ({
-    source: s,
-    reason:
-      s.platform === "youtube"
-        ? "Search this official channel for satsang Q&A on your question."
-        : s.platform === "instagram"
-          ? "Short official excerpts often address this theme."
-          : s.platform === "publication"
-            ? "Published Vaani may cover this theme in written form."
-            : "Official written material may address this theme.",
-    topics: suggestedTopics,
-    hasIndexedTranscript: false,
-    url: s.url,
-  }));
+  return sources
+    .filter((s) => s.platform !== "mobile_app" && s.authority === "OFFICIAL")
+    .map((s) => ({
+      source: s,
+      reason:
+        s.platform === "youtube"
+          ? "Search this official channel for satsang Q&A on your question."
+          : s.platform === "instagram"
+            ? "Short official excerpts often address this theme."
+            : s.platform === "publication"
+              ? "Published Vaani may cover this theme in written form."
+              : "Official written material may address this theme.",
+      topics: suggestedTopics,
+      hasIndexedTranscript: false,
+      url: s.url,
+    }));
 }

@@ -107,11 +107,11 @@ function AskPage() {
         </div>
 
         <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs leading-relaxed text-foreground">
-          Knowledge base status: {indexedRealSegments} transcript segments indexed from
-          official sources. Until ingestion is authorised and run, real-source questions will
-          correctly return <strong>insufficient source evidence</strong>. Turn on demo fixtures to
-          preview how cited answers render — those fixtures are synthetic and are never attributed to
-          Maharaj Ji.
+          Knowledge base status: {indexedRealSegments} transcript segments indexed from official
+          sources. Until ingestion is authorised and run, real-source questions will correctly
+          return <strong>insufficient source evidence</strong>. Turn on demo fixtures to preview how
+          cited answers render — those fixtures are synthetic and are never attributed to Maharaj
+          Ji.
         </div>
 
         <div className="mt-6">

@@ -53,20 +53,20 @@ function FinderPage() {
           library.contentItems.find((c) => c.id === h.segment.content_item_id) ?? DEMO_ITEM;
         const source = library.sources.find((x) => x.id === item.source_id) ?? DEMO_SOURCE;
         return {
-        citation: {
-          id: `find_${h.segment.id}_${i}`,
-          segment_id: h.segment.id,
-          content_item_id: h.segment.content_item_id,
-          source_id: source.id,
-          quote: h.segment.text,
-          start_seconds: h.segment.start_seconds,
-          end_seconds: h.segment.end_seconds,
-          score: h.score,
-          validated: true,
-        },
-        segment: h.segment,
-        item,
-        source,
+          citation: {
+            id: `find_${h.segment.id}_${i}`,
+            segment_id: h.segment.id,
+            content_item_id: h.segment.content_item_id,
+            source_id: source.id,
+            quote: h.segment.text,
+            start_seconds: h.segment.start_seconds,
+            end_seconds: h.segment.end_seconds,
+            score: h.score,
+            validated: true,
+          },
+          segment: h.segment,
+          item,
+          source,
         };
       }),
     );

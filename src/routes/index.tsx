@@ -68,9 +68,9 @@ function Home() {
             </Button>
           </div>
           <p className="mt-6 text-xs text-muted-foreground">
-            {officialSources.length} official sources registered ·{" "}
-            {indexedRealSegments} transcripts indexed so far — answers will show
-            “insufficient source evidence” until ingestion is authorised and run.
+            {officialSources.length} official sources registered · {indexedRealSegments} transcripts
+            indexed so far — answers will show “insufficient source evidence” until ingestion is
+            authorised and run.
           </p>
         </div>
       </section>
