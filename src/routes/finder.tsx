@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ExternalLink, Search } from "lucide-react";
 import { useState } from "react";
@@ -8,6 +9,8 @@ import { SiteShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DEMO_ITEM, DEMO_SOURCE } from "@/data/registry";
+import { LibraryErrorState, LibraryNotFoundState } from "@/components/library-states";
+import { wisdomLibraryQuery } from "@/lib/library-query";
 import type { RetrievedCitation } from "@/data/types";
 import { findOriginalMoments, retrieveSegments, type SatsangMoment } from "@/lib/rag";
 import { trackSourceView } from "@/lib/local-store";
@@ -28,10 +31,14 @@ export const Route = createFileRoute("/finder")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(wisdomLibraryQuery),
+  errorComponent: LibraryErrorState,
+  notFoundComponent: LibraryNotFoundState,
   component: FinderPage,
 });
 
 function FinderPage() {
+  const { data: library } = useSuspenseQuery(wisdomLibraryQuery);
   const [query, setQuery] = useState("");
   const [moments, setMoments] = useState<SatsangMoment[] | null>(null);
   const [indexed, setIndexed] = useState<RetrievedCitation[]>([]);
@@ -39,24 +46,29 @@ function FinderPage() {
   const run = () => {
     const q = query.trim();
     if (!q) return;
-    setMoments(findOriginalMoments(q));
+    setMoments(findOriginalMoments(q, library));
     setIndexed(
-      retrieveSegments(q, true).map((h, i) => ({
-        citation: {
-          id: `find_${h.segment.id}_${i}`,
-          segment_id: h.segment.id,
-          content_item_id: h.segment.content_item_id,
-          source_id: DEMO_SOURCE.id,
-          quote: h.segment.text,
-          start_seconds: h.segment.start_seconds,
-          end_seconds: h.segment.end_seconds,
-          score: h.score,
-          validated: true,
-        },
-        segment: h.segment,
-        item: DEMO_ITEM,
-        source: DEMO_SOURCE,
-      })),
+      retrieveSegments(q, true, library).map((h, i) => {
+        const item =
+          library.contentItems.find((c) => c.id === h.segment.content_item_id) ?? DEMO_ITEM;
+        const source = library.sources.find((x) => x.id === item.source_id) ?? DEMO_SOURCE;
+        return {
+          citation: {
+            id: `find_${h.segment.id}_${i}`,
+            segment_id: h.segment.id,
+            content_item_id: h.segment.content_item_id,
+            source_id: source.id,
+            quote: h.segment.text,
+            start_seconds: h.segment.start_seconds,
+            end_seconds: h.segment.end_seconds,
+            score: h.score,
+            validated: true,
+          },
+          segment: h.segment,
+          item,
+          source,
+        };
+      }),
     );
   };
 

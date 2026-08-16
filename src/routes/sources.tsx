@@ -1,11 +1,13 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 import { AuthorityBadge, StatusPill } from "@/components/badges";
+import { LibraryErrorState, LibraryNotFoundState } from "@/components/library-states";
 import { SiteShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
-import { CONTENT_ITEMS, SOURCES } from "@/data/registry";
+import { wisdomLibraryQuery } from "@/lib/library-query";
 import type { Platform } from "@/data/types";
 import { trackSourceView, useRecentSources } from "@/lib/local-store";
 
@@ -26,6 +28,9 @@ export const Route = createFileRoute("/sources")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(wisdomLibraryQuery),
+  errorComponent: LibraryErrorState,
+  notFoundComponent: LibraryNotFoundState,
   component: SourcesPage,
 });
 
@@ -43,8 +48,9 @@ function SourcesPage() {
   const [filter, setFilter] = useState<Platform | "all">("all");
   const [officialOnly, setOfficialOnly] = useState(true);
   const { items: recent, clear } = useRecentSources();
+  const { data: library } = useSuspenseQuery(wisdomLibraryQuery);
 
-  const sources = SOURCES.filter(
+  const sources = library.sources.filter(
     (s) =>
       (filter === "all" || s.platform === filter) &&
       (!officialOnly || s.authority === "OFFICIAL"),
@@ -88,7 +94,7 @@ function SourcesPage() {
 
         <div className="mt-8 space-y-4">
           {sources.map((s) => {
-            const items = CONTENT_ITEMS.filter((c) => c.source_id === s.id);
+            const items = library.contentItems.filter((c) => c.source_id === s.id);
             return (
               <article key={s.id} className="card-elevated p-5">
                 <div className="flex flex-wrap items-center gap-2">

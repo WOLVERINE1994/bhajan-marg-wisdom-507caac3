@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, Send } from "lucide-react";
@@ -8,7 +9,9 @@ import { SiteShell } from "@/components/site-shell";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { CORPUS_STATS, EXAMPLE_PROMPTS } from "@/data/registry";
+import { EXAMPLE_PROMPTS } from "@/data/registry";
+import { LibraryErrorState, LibraryNotFoundState } from "@/components/library-states";
+import { wisdomLibraryQuery } from "@/lib/library-query";
 import type { GeneratedAnswer } from "@/data/types";
 import { generateAnswer } from "@/lib/rag";
 
@@ -30,6 +33,9 @@ export const Route = createFileRoute("/ask")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(wisdomLibraryQuery),
+  errorComponent: LibraryErrorState,
+  notFoundComponent: LibraryNotFoundState,
   component: AskPage,
 });
 
@@ -39,6 +45,8 @@ interface Turn {
 
 function AskPage() {
   const { q } = Route.useSearch();
+  const { data: library } = useSuspenseQuery(wisdomLibraryQuery);
+  const indexedRealSegments = library.transcriptSegments.filter((s) => !s.is_demo_fixture).length;
   const [input, setInput] = useState(q ?? "");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,7 +58,7 @@ function AskPage() {
     setLoading(true);
     setInput("");
     window.setTimeout(() => {
-      setTurns((prev) => [{ answer: generateAnswer(question, demoMode) }, ...prev]);
+      setTurns((prev) => [{ answer: generateAnswer(question, demoMode, library) }, ...prev]);
       setLoading(false);
     }, 420);
   };
@@ -99,11 +107,11 @@ function AskPage() {
         </div>
 
         <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs leading-relaxed text-foreground">
-          Knowledge base status: {CORPUS_STATS.indexedRealSegments} transcript segments indexed from
-          official sources. Until ingestion is authorised and run, real-source questions will
-          correctly return <strong>insufficient source evidence</strong>. Turn on demo fixtures to
-          preview how cited answers render — those fixtures are synthetic and are never attributed to
-          Maharaj Ji.
+          Knowledge base status: {indexedRealSegments} transcript segments indexed from official
+          sources. Until ingestion is authorised and run, real-source questions will correctly
+          return <strong>insufficient source evidence</strong>. Turn on demo fixtures to preview how
+          cited answers render — those fixtures are synthetic and are never attributed to Maharaj
+          Ji.
         </div>
 
         <div className="mt-6">

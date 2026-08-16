@@ -1,5 +1,13 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, FileAudio, Plus, ScissorsLineDashed, ShieldQuestion, Upload } from "lucide-react";
+import {
+  CheckCircle2,
+  FileAudio,
+  Plus,
+  ScissorsLineDashed,
+  ShieldQuestion,
+  Upload,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -24,7 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CONTENT_ITEMS, DEMO_ITEM, INGESTION_JOBS, SOURCES, sourceById } from "@/data/registry";
+import { LibraryErrorState, LibraryNotFoundState } from "@/components/library-states";
+import { wisdomLibraryQuery } from "@/lib/library-query";
 import type { ContentItem } from "@/data/types";
 import { formatDuration } from "@/lib/rag";
 
@@ -45,11 +54,20 @@ export const Route = createFileRoute("/admin")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(wisdomLibraryQuery),
+  errorComponent: LibraryErrorState,
+  notFoundComponent: LibraryNotFoundState,
   component: AdminPage,
 });
 
 function AdminPage() {
-  const [items, setItems] = useState<ContentItem[]>([...CONTENT_ITEMS, DEMO_ITEM]);
+  const { data: library } = useSuspenseQuery(wisdomLibraryQuery);
+  const sourceById = (id: string) =>
+    library.sources.find((s) => s.id === id) ?? {
+      name: id,
+      authority: "THIRD_PARTY_DISCOVERY" as const,
+    };
+  const [items, setItems] = useState<ContentItem[]>(library.contentItems);
   const [url, setUrl] = useState("");
   const [platform, setPlatform] = useState("youtube");
   const [official, setOfficial] = useState(true);
@@ -61,7 +79,7 @@ function AdminPage() {
     }
     const item: ContentItem = {
       id: `ci_new_${items.length + 1}`,
-      source_id: SOURCES[0]!.id,
+      source_id: library.sources[0]!.id,
       title: url.replace(/^https?:\/\//, "").slice(0, 60),
       url,
       published_at: null,
@@ -92,9 +110,7 @@ function AdminPage() {
   return (
     <SiteShell>
       <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
-        <h1 className="font-display text-3xl font-semibold text-foreground">
-          Ingestion dashboard
-        </h1>
+        <h1 className="font-display text-3xl font-semibold text-foreground">Ingestion dashboard</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Mock console for the architected pipeline. Actions here change local state only — they do
           not fetch, transcribe or publish anything, and no item is ever shown as indexed unless it
@@ -284,7 +300,7 @@ function AdminPage() {
         <section className="mt-10">
           <h2 className="font-display text-xl font-semibold text-foreground">Ingestion jobs</h2>
           <div className="mt-4 space-y-2">
-            {INGESTION_JOBS.map((j) => (
+            {library.ingestionJobs.map((j) => (
               <div
                 key={j.id}
                 className="card-elevated flex flex-wrap items-center gap-3 p-3 text-xs"

@@ -6,6 +6,7 @@ import {
   SOURCES,
   TOPICS,
 } from "@/data/registry";
+import type { WisdomLibrary } from "@/data/library";
 import type {
   GeneratedAnswer,
   LanguageCode,
@@ -53,8 +54,40 @@ export function detectLanguage(question: string): LanguageCode {
 }
 
 const STOP = new Set([
-  "the","a","an","is","are","do","does","how","what","why","i","my","me","to","of","and","in","on",
-  "kya","kaise","kyon","mujhe","mera","meri","hai","ho","ka","ki","ke","se","par","main","aur","nahi",
+  "the",
+  "a",
+  "an",
+  "is",
+  "are",
+  "do",
+  "does",
+  "how",
+  "what",
+  "why",
+  "i",
+  "my",
+  "me",
+  "to",
+  "of",
+  "and",
+  "in",
+  "on",
+  "kya",
+  "kaise",
+  "kyon",
+  "mujhe",
+  "mera",
+  "meri",
+  "hai",
+  "ho",
+  "ka",
+  "ki",
+  "ke",
+  "se",
+  "par",
+  "main",
+  "aur",
+  "nahi",
 ]);
 
 function tokenize(text: string): string[] {
@@ -75,8 +108,13 @@ export interface RetrievalHit {
  * Only searches segments that are actually indexed. Real sources have no
  * indexed segments in this MVP, so real-source retrieval returns nothing.
  */
-export function retrieveSegments(question: string, includeDemoFixtures: boolean): RetrievalHit[] {
-  const pool = includeDemoFixtures ? DEMO_SEGMENTS : [];
+export function retrieveSegments(
+  question: string,
+  includeDemoFixtures: boolean,
+  library?: WisdomLibrary,
+): RetrievalHit[] {
+  const indexed = library ? library.transcriptSegments : DEMO_SEGMENTS;
+  const pool = includeDemoFixtures ? indexed : indexed.filter((s) => !s.is_demo_fixture);
   const tokens = tokenize(question);
   if (!tokens.length) return [];
 
@@ -92,24 +130,29 @@ export function retrieveSegments(question: string, includeDemoFixtures: boolean)
     .slice(0, 3);
 }
 
-function toCitations(hits: RetrievalHit[]): RetrievedCitation[] {
-  return hits.map((hit, i) => ({
-    citation: {
-      id: `cit_${hit.segment.id}_${i}`,
-      segment_id: hit.segment.id,
-      content_item_id: hit.segment.content_item_id,
-      source_id: DEMO_SOURCE.id,
-      // Never fabricate: the quote is exactly the stored segment text.
-      quote: hit.segment.text,
-      start_seconds: hit.segment.start_seconds,
-      end_seconds: hit.segment.end_seconds,
-      score: hit.score,
-      validated: true,
-    },
-    segment: hit.segment,
-    item: DEMO_ITEM,
-    source: DEMO_SOURCE,
-  }));
+function toCitations(hits: RetrievalHit[], library?: WisdomLibrary): RetrievedCitation[] {
+  return hits.map((hit, i) => {
+    const item =
+      library?.contentItems.find((c) => c.id === hit.segment.content_item_id) ?? DEMO_ITEM;
+    const source = library?.sources.find((s) => s.id === item.source_id) ?? DEMO_SOURCE;
+    return {
+      citation: {
+        id: `cit_${hit.segment.id}_${i}`,
+        segment_id: hit.segment.id,
+        content_item_id: hit.segment.content_item_id,
+        source_id: source.id,
+        // Never fabricate: the quote is exactly the stored segment text.
+        quote: hit.segment.text,
+        start_seconds: hit.segment.start_seconds,
+        end_seconds: hit.segment.end_seconds,
+        score: hit.score,
+        validated: true,
+      },
+      segment: hit.segment,
+      item,
+      source,
+    };
+  });
 }
 
 function safetyPreamble(flags: SafetyFlag[]): string {
@@ -141,9 +184,13 @@ function safetyPreamble(flags: SafetyFlag[]): string {
  * Mock RAG orchestration. Retrieval first, then a strictly bounded synthesis.
  * If evidence is weak, it refuses rather than putting words in anyone's mouth.
  */
-export function generateAnswer(question: string, includeDemoFixtures: boolean): GeneratedAnswer {
+export function generateAnswer(
+  question: string,
+  includeDemoFixtures: boolean,
+  library?: WisdomLibrary,
+): GeneratedAnswer {
   const flags = detectSafetyFlags(question);
-  const hits = retrieveSegments(question, includeDemoFixtures);
+  const hits = retrieveSegments(question, includeDemoFixtures, library);
   const top = hits[0]?.score ?? 0;
   const preamble = safetyPreamble(flags);
 
@@ -161,13 +208,13 @@ export function generateAnswer(question: string, includeDemoFixtures: boolean): 
       ]
         .filter(Boolean)
         .join("\n\n"),
-      citations: toCitations(hits),
+      citations: toCitations(hits, library),
       safety_flags: flags,
       created_at: new Date().toISOString(),
     };
   }
 
-  const citations = toCitations(hits);
+  const citations = toCitations(hits, library);
   const mode = top >= 0.7 && hits.length === 1 ? "DIRECT_TEACHING" : "SYNTHESIZED_FROM_TEACHINGS";
   const body = [
     preamble,
@@ -221,42 +268,49 @@ export interface SatsangMoment {
  * Original satsang finder: returns *where to look* in the official sources.
  * It never claims an indexed moment exists when no transcript is indexed.
  */
-export function findOriginalMoments(question: string): SatsangMoment[] {
+export function findOriginalMoments(question: string, library?: WisdomLibrary): SatsangMoment[] {
   const tokens = tokenize(question);
-  const topicMatches = TOPICS.filter((t) =>
-    tokens.some(
-      (tok) =>
-        t.label_en.toLowerCase().includes(tok) ||
-        t.blurb.toLowerCase().includes(tok) ||
-        t.slug.includes(tok) ||
-        t.example_questions.join(" ").toLowerCase().includes(tok),
-    ),
-  ).map((t) => t.label_en);
+  const topics = library?.topics.length ? library.topics : TOPICS;
+  const sources = library?.sources.length ? library.sources : SOURCES;
+  const topicMatches = topics
+    .filter((t) =>
+      tokens.some(
+        (tok) =>
+          t.label_en.toLowerCase().includes(tok) ||
+          t.blurb.toLowerCase().includes(tok) ||
+          t.slug.includes(tok) ||
+          t.example_questions.join(" ").toLowerCase().includes(tok),
+      ),
+    )
+    .map((t) => t.label_en);
 
-  const demoHits = retrieveSegments(question, true);
-  const demoTopics = DEMO_SEGMENT_TOPICS.filter((st) =>
-    demoHits.some((h) => h.segment.id === st.segment_id),
-  ).map((st) => st.topic_id);
+  const demoHits = retrieveSegments(question, true, library);
+  const segmentTopics = library?.segmentTopics.length ? library.segmentTopics : DEMO_SEGMENT_TOPICS;
+  const demoTopics = segmentTopics
+    .filter((st) => demoHits.some((h) => h.segment.id === st.segment_id))
+    .map((st) => st.topic_id);
 
   const suggestedTopics = Array.from(
     new Set([
       ...topicMatches,
-      ...demoTopics.map((slug) => TOPICS.find((t) => t.slug === slug)?.label_en ?? slug),
+      ...demoTopics.map((slug) => topics.find((t) => t.slug === slug)?.label_en ?? slug),
     ]),
   ).slice(0, 4);
 
-  return SOURCES.filter((s) => s.platform !== "mobile_app").map((s) => ({
-    source: s,
-    reason:
-      s.platform === "youtube"
-        ? "Search this official channel for satsang Q&A on your question."
-        : s.platform === "instagram"
-          ? "Short official excerpts often address this theme."
-          : s.platform === "publication"
-            ? "Published Vaani may cover this theme in written form."
-            : "Official written material may address this theme.",
-    topics: suggestedTopics,
-    hasIndexedTranscript: false,
-    url: s.url,
-  }));
+  return sources
+    .filter((s) => s.platform !== "mobile_app" && s.authority === "OFFICIAL")
+    .map((s) => ({
+      source: s,
+      reason:
+        s.platform === "youtube"
+          ? "Search this official channel for satsang Q&A on your question."
+          : s.platform === "instagram"
+            ? "Short official excerpts often address this theme."
+            : s.platform === "publication"
+              ? "Published Vaani may cover this theme in written form."
+              : "Official written material may address this theme.",
+      topics: suggestedTopics,
+      hasIndexedTranscript: false,
+      url: s.url,
+    }));
 }
