@@ -24,12 +24,16 @@ export const Route = createFileRoute("/topics")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(wisdomLibraryQuery),
+  errorComponent: LibraryErrorState,
+  notFoundComponent: LibraryNotFoundState,
   component: TopicsPage,
 });
 
 function TopicsPage() {
   const [query, setQuery] = useState("");
-  const filtered = TOPICS.filter((t) =>
+  const { data: library } = useSuspenseQuery(wisdomLibraryQuery);
+  const filtered = library.topics.filter((t) =>
     `${t.label_en} ${t.label_hi} ${t.blurb}`.toLowerCase().includes(query.toLowerCase()),
   );
 
