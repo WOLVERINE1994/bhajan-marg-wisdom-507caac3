@@ -1,3 +1,5 @@
+import { createClient } from "@supabase/supabase-js";
+
 import { getRegistryLibrary, type WisdomLibrary } from "./library";
 import type {
   ContentItem,
@@ -8,78 +10,65 @@ import type {
   TranscriptSegment,
 } from "./types";
 
-type SupabaseTable =
-  | "sources"
-  | "content_items"
-  | "topics"
-  | "transcript_segments"
-  | "segment_topics"
-  | "ingestion_jobs";
-
-interface ServerEnvironment {
-  SUPABASE_URL?: string;
-  SUPABASE_ANON_KEY?: string;
-  SUPABASE_SERVICE_ROLE_KEY?: string;
-}
-
-function serverEnvironment(): ServerEnvironment {
-  if (typeof process === "undefined") return {};
-  return process.env;
-}
-
-async function selectAll<T>(url: string, key: string, table: SupabaseTable): Promise<T[]> {
-  const response = await fetch(`${url}/rest/v1/${table}?select=*`, {
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      Accept: "application/json",
-    },
-    signal: AbortSignal.timeout(4_000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Supabase ${table} query failed (${response.status})`);
-  }
-  return (await response.json()) as T[];
-}
-
 /**
- * Loads the public wisdom-library snapshot on the server.
+ * Loads the public wisdom-library snapshot on the server using the publishable
+ * key. Only rows exposed by the public read policies are returned, and no
+ * credential ever reaches client code.
  *
- * No Supabase credential is imported into client code. A missing configuration,
- * timeout, unavailable database, or incomplete initial migration falls back to
- * the reviewed registry so public pages continue to render safely.
+ * A missing configuration, timeout, unavailable database, or incomplete
+ * migration falls back to the reviewed local registry so public pages continue
+ * to render safely.
  */
 export async function loadWisdomLibrary(
   options: { includeDemoFixtures?: boolean } = {},
 ): Promise<WisdomLibrary> {
   const fallback = getRegistryLibrary(options.includeDemoFixtures);
-  const { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY } = serverEnvironment();
-  const databaseKey = SUPABASE_SERVICE_ROLE_KEY ?? SUPABASE_ANON_KEY;
-  if (!SUPABASE_URL || !databaseKey) return fallback;
 
-  const baseUrl = SUPABASE_URL.replace(/\/$/, "");
+  const url = process.env["SUPABASE_URL"];
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_ANON_KEY"];
+  if (!url || !key) return fallback;
+
+  const supabase = createClient(url, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+
   try {
     const [sources, contentItems, topics, transcriptSegments, segmentTopics, ingestionJobs] =
       await Promise.all([
-        selectAll<Source>(baseUrl, databaseKey, "sources"),
-        selectAll<ContentItem>(baseUrl, databaseKey, "content_items"),
-        selectAll<Topic>(baseUrl, databaseKey, "topics"),
-        selectAll<TranscriptSegment>(baseUrl, databaseKey, "transcript_segments"),
-        selectAll<SegmentTopic>(baseUrl, databaseKey, "segment_topics"),
-        selectAll<IngestionJob>(baseUrl, databaseKey, "ingestion_jobs"),
+        supabase.from("sources").select("*").order("created_at"),
+        supabase.from("content_items").select("*").order("title"),
+        supabase.from("topics").select("*").order("label_en"),
+        supabase.from("transcript_segments").select("*").order("seq"),
+        supabase.from("segment_topics").select("*"),
+        supabase.from("ingestion_jobs").select("*").order("created_at"),
       ]);
 
-    // Empty sources/topics normally means the migration or seed has not completed.
-    if (!sources.length || !topics.length) return fallback;
-
-    return {
+    const first = [
       sources,
       contentItems,
       topics,
       transcriptSegments,
       segmentTopics,
       ingestionJobs,
+    ].find((r) => r.error);
+    if (first?.error) throw first.error;
+
+    // Empty sources/topics normally means the migration or seed has not completed.
+    if (!sources.data?.length || !topics.data?.length) return fallback;
+
+    return {
+      sources: (sources.data ?? []) as unknown as Source[],
+      contentItems: (contentItems.data ?? []) as unknown as ContentItem[],
+      topics: (topics.data ?? []) as unknown as Topic[],
+      transcriptSegments: (transcriptSegments.data ?? []).map((s) => ({
+        ...(s as unknown as TranscriptSegment),
+        embedding: null,
+      })),
+      segmentTopics: (segmentTopics.data ?? []).map((st) => ({
+        ...(st as unknown as SegmentTopic),
+        score: Number((st as { score: number | string }).score),
+      })),
+      ingestionJobs: (ingestionJobs.data ?? []) as unknown as IngestionJob[],
       origin: "supabase",
     };
   } catch (error) {
