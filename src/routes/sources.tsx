@@ -94,7 +94,7 @@ function SourcesPage() {
 
         <div className="mt-8 space-y-4">
           {sources.map((s) => {
-            const items = CONTENT_ITEMS.filter((c) => c.source_id === s.id);
+            const items = library.contentItems.filter((c) => c.source_id === s.id);
             return (
               <article key={s.id} className="card-elevated p-5">
                 <div className="flex flex-wrap items-center gap-2">
