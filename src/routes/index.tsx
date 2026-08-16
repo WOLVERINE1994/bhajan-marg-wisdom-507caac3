@@ -25,10 +25,17 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(wisdomLibraryQuery),
+  errorComponent: LibraryErrorState,
+  notFoundComponent: LibraryNotFoundState,
   component: Home,
 });
 
 function Home() {
+  const { data: library } = useSuspenseQuery(wisdomLibraryQuery);
+  const officialSources = library.sources.filter((s) => s.authority === "OFFICIAL");
+  const indexedRealSegments = library.transcriptSegments.filter((s) => !s.is_demo_fixture).length;
+
   return (
     <SiteShell>
       <section className="paper-wash relative overflow-hidden border-b border-border/60">
