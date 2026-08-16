@@ -1,3 +1,4 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen, Compass, ShieldCheck } from "lucide-react";
 
@@ -67,8 +68,8 @@ function Home() {
             </Button>
           </div>
           <p className="mt-6 text-xs text-muted-foreground">
-            {CORPUS_STATS.registeredSources} official sources registered ·{" "}
-            {CORPUS_STATS.indexedRealSegments} transcripts indexed so far — answers will show
+            {officialSources.length} official sources registered ·{" "}
+            {indexedRealSegments} transcripts indexed so far — answers will show
             “insufficient source evidence” until ingestion is authorised and run.
           </p>
         </div>
@@ -136,7 +137,7 @@ function Home() {
           </Button>
         </div>
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {TOPICS.slice(0, 8).map((t) => (
+          {library.topics.slice(0, 8).map((t) => (
             <Link
               key={t.slug}
               to="/topics"
@@ -161,7 +162,7 @@ function Home() {
             Verified public destinations. Metadata only until ingestion permission is confirmed.
           </p>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {SOURCES.map((s) => (
+            {officialSources.map((s) => (
               <div key={s.id} className="card-elevated flex flex-col gap-2 p-4">
                 <AuthorityBadge authority={s.authority} />
                 <p className="font-display text-base font-semibold text-foreground">{s.name}</p>
